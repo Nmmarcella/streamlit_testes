@@ -33,8 +33,7 @@ if uploaded_file is not None:
         st.write(data)
     except Exception as e:
         st.error(f"Erro ao carregar o arquivo CSV: {e}")
-#carregando dados
-data = load_data()
+
 
 #titulo
 st.title("Painel Dinâmico - Vendas de Produtos Lubrificantes (ANP)")
