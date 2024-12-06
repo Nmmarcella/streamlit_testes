@@ -1,29 +1,38 @@
-import streamlit as st
+import zipfile
 import pandas as pd
-import plotly.express as px
+import streamlit as st
+import os
+from io import BytesIO
 
-#func para carregar dados
-@st.cache_data
-def download_and_unzip(url, extract_to):
-    response = requests.get(url)
-    with zipfile.ZipFile(BytesIO(response.content)) as zip_ref:
+#descompact zip
+def unzip_file(zip_file, extract_to):
+    with zipfile.ZipFile(zip_file, 'r') as zip_ref:
         zip_ref.extractall(extract_to)
 
-#url zip
-url = "https://github.com/Nmmarcella/streamlit_testes/raw/main/Lubrificante_Anexo_A.zip"  # URL para o arquivo ZIP
+#upload
+st.title('Upload de Arquivo ZIP')
+uploaded_file = st.file_uploader("Escolha o arquivo ZIP", type=["zip"])
 
-#extracao
-extract_to = "path_to_extract_folder/"
+if uploaded_file is not None:
+    #way
+    extract_to = "extracted_files/"
 
-#descompact
-download_and_unzip(url, extract_to)
+    
+    if not os.path.exists(extract_to):
+        os.makedirs(extract_to)
 
-#way
-csv_file = os.path.join(extract_to, "Lubrificante_Anexo_A.csv")
+    #descompact
+    unzip_file(uploaded_file, extract_to)
+    
+    
+    csv_file = os.path.join(extract_to, "Lubrificante_Anexo_A.csv")  
+    
 
-#load
-data = pd.read_csv(csv_file, sep=";", encoding="latin-1")
-
+    try:
+        data = pd.read_csv(csv_file, sep=";", encoding="latin-1")
+        st.write(data)
+    except Exception as e:
+        st.error(f"Erro ao carregar o arquivo CSV: {e}")
 #carregando dados
 data = load_data()
 
