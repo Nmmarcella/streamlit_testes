@@ -35,7 +35,7 @@ if uploaded_file is not None:
         st.error(f"Erro ao carregar o arquivo CSV: {e}")
     if 'Ano' not in data.columns:
                 st.error("Coluna 'Ano' não encontrada no arquivo CSV.")
-            else:
+    else:
                 st.success("Arquivo CSV carregado com sucesso.")
         except Exception as e:
             st.error(f"Erro ao carregar o arquivo CSV: {e}")
