@@ -3,28 +3,30 @@ import pandas as pd
 import streamlit as st
 import os
 from io import BytesIO
-import plotly.express as px
 
-# descompacta o arquivo ZIP
+# função para descompactar o arquivo ZIP
 def unzip_file(zip_file, extract_to):
     with zipfile.ZipFile(zip_file, 'r') as zip_ref:
         zip_ref.extractall(extract_to)
 
 # título da aplicação
 st.title('Upload de Arquivo ZIP')
+
+# upload do arquivo ZIP
 uploaded_file = st.file_uploader("Escolha o arquivo ZIP", type=["zip"])
 
 # se o arquivo for enviado
 if uploaded_file is not None:
     extract_to = "extracted_files/"
-    
+
     # cria a pasta de extração se não existir
     if not os.path.exists(extract_to):
         os.makedirs(extract_to)
 
     # descompacta o arquivo ZIP
     unzip_file(uploaded_file, extract_to)
-    
+
+    # nome do arquivo CSV extraído
     csv_file = os.path.join(extract_to, "Lubrificante_Anexo_A.csv")  
 
     try:
@@ -32,7 +34,7 @@ if uploaded_file is not None:
         data = pd.read_csv(csv_file, sep=";", encoding="latin-1")
         st.write(data)
         
-        # verifica se a coluna 'Ano' existe
+        # verificar se a coluna 'Ano' existe
         if 'Ano' not in data.columns:
             st.error("Coluna 'Ano' não encontrada no arquivo CSV.")
         else:
@@ -40,9 +42,16 @@ if uploaded_file is not None:
     except Exception as e:
         st.error(f"Erro ao carregar o arquivo CSV: {e}")
 
-# se o arquivo foi carregado e contém a coluna 'Ano'
+    # botão para o download do arquivo ZIP original
+    st.download_button(
+        label="Baixar arquivo ZIP",
+        data=uploaded_file,
+        file_name="arquivo_lubrificante.zip",
+        mime="application/zip"
+    )
+
+# título do painel dinâmico
 if 'data' in locals() and 'Ano' in data.columns:
-    # título do painel dinâmico
     st.title("Painel Dinâmico - Vendas de Produtos Lubrificantes (ANP)")
 
     # filtros no painel lateral
