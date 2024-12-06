@@ -4,9 +4,8 @@ import streamlit as st
 import os
 from io import BytesIO
 import plotly.express as px
-import time
 
-# Função para exibir a opção de download do arquivo ZIP Anexo_A do GitHub
+# Função para exibir o link de download do arquivo ZIP
 def download_zip_from_github():
     github_url = "https://github.com/Nmmarcella/streamlit_testes/blob/main/Lubrificante_Anexo_A.zip?raw=true"
     st.markdown(f"[Baixar arquivo ZIP Anexo_A](<{github_url}>)")
@@ -14,20 +13,19 @@ def download_zip_from_github():
 # Função para descompactar o arquivo ZIP enviado
 def unzip_file(zip_file, extract_to):
     with zipfile.ZipFile(zip_file, 'r') as zip_ref:
-        file_list = zip_ref.namelist()
-        progress_bar = st.progress(0)  # Inicializa a barra de progresso
-        total_files = len(file_list)
-        
-        for i, file in enumerate(file_list):
-            zip_ref.extract(file, extract_to)
-            progress_bar.progress((i + 1) / total_files)  # Atualiza a barra de progresso
-            time.sleep(0.1)  # Pequena pausa para garantir feedback visual
+        zip_ref.extractall(extract_to)
 
-# Função otimizada para carregar os dados CSV
+# Função otimizada para carregar dados CSV em blocos
 @st.cache_data
 def load_data(csv_file):
     try:
-        data = pd.read_csv(csv_file, sep=";", encoding="latin-1", low_memory=False)
+        # Lê apenas as colunas necessárias para os filtros e análise
+        cols_to_use = ["Ano", "Mês", "Descrição do Produto", "UF de Origem", "UF do Destinatário", "Região do Destinatário", "Volume(L)"]
+        data = pd.read_csv(csv_file, sep=";", encoding="latin-1", usecols=cols_to_use, low_memory=False)
+        
+        # Converte colunas categóricas para economizar memória
+        for col in ["Ano", "Mês", "Descrição do Produto", "UF de Origem", "UF do Destinatário", "Região do Destinatário"]:
+            data[col] = data[col].astype("category")
         return data
     except Exception as e:
         st.error(f"Erro ao carregar o arquivo CSV: {e}")
@@ -40,7 +38,7 @@ st.title('Download de Arquivo ZIP e Upload de Novo ZIP')
 st.header("Baixar o arquivo ZIP Anexo_A")
 download_zip_from_github()
 
-# Segunda parte: Upload de um novo arquivo ZIP (Anexo_A.zip)
+# Segunda parte: Upload de um novo arquivo ZIP
 st.header("Agora, faça o upload do arquivo ZIP Anexo_A")
 
 uploaded_file = st.file_uploader("Escolha o arquivo ZIP", type=["zip"])
@@ -54,10 +52,7 @@ if uploaded_file is not None:
         os.makedirs(extract_to)
     
     st.info("Extraindo o arquivo ZIP...")  # Feedback ao usuário
-    
-    # Descompacta o arquivo ZIP com barra de progresso
     unzip_file(uploaded_file, extract_to)
-    
     st.success("Arquivo ZIP carregado e extraído com sucesso!")
 
     # Caminho do arquivo CSV extraído
@@ -73,11 +68,11 @@ if uploaded_file is not None:
             
             # Filtros de dados
             st.sidebar.header("Filtros")
-            anos = st.sidebar.multiselect("Ano", sorted(data['Ano'].unique()))
-            meses = st.sidebar.multiselect("Mês", sorted(data['Mês'].unique()))
-            produtos = st.sidebar.multiselect("Produto", data['Descrição do Produto'].unique())
-            ufs_origem = st.sidebar.multiselect("UF de Origem", data['UF de Origem'].unique())
-            ufs_destino = st.sidebar.multiselect("UF do Destinatário", data['UF do Destinatário'].unique())
+            anos = st.sidebar.multiselect("Ano", sorted(data['Ano'].cat.categories))
+            meses = st.sidebar.multiselect("Mês", sorted(data['Mês'].cat.categories))
+            produtos = st.sidebar.multiselect("Produto", data['Descrição do Produto'].cat.categories)
+            ufs_origem = st.sidebar.multiselect("UF de Origem", data['UF de Origem'].cat.categories)
+            ufs_destino = st.sidebar.multiselect("UF do Destinatário", data['UF do Destinatário'].cat.categories)
 
             # Aplicando filtros
             filtered_data = data
