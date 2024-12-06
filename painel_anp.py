@@ -6,7 +6,7 @@ import plotly.express as px
 @st.cache_data
 def load_data():
     #caminho
-    file_path = r"C:\Users\marce\painel-dinamico-dado-lubrificante\Lubrificante_Anexo_A.csv"
+    file_path = r"https://github.com/Nmmarcella/streamlit_testes/blob/main/Lubrificante_Anexo_A.zip"
     data = pd.read_csv(file_path, sep=";", encoding="latin-1")
     return data
 
