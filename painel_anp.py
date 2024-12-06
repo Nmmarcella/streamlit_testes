@@ -12,25 +12,23 @@ def download_zip_from_github():
     st.markdown(f"[Baixar arquivo ZIP Anexo_A](<{github_url}>)")
 
 # Função para descompactar o arquivo ZIP enviado
-def unzip_file(zip_file, extract_to, progress_bar):
+def unzip_file(zip_file, extract_to):
     with zipfile.ZipFile(zip_file, 'r') as zip_ref:
-        # Obter a lista de arquivos para extração
         file_list = zip_ref.namelist()
+        progress_bar = st.progress(0)  # Inicializa a barra de progresso
+        total_files = len(file_list)
         
-        # Atualiza a barra de progresso com base na quantidade de arquivos
         for i, file in enumerate(file_list):
             zip_ref.extract(file, extract_to)
-            progress_bar.progress((i + 1) / len(file_list))  # Atualiza a barra com a proporção de arquivos extraídos
-            time.sleep(0.1)  # Simula algum tempo de extração
+            progress_bar.progress((i + 1) / total_files)  # Atualiza a barra de progresso
+            time.sleep(0.1)  # Pequena pausa para garantir feedback visual
 
 # Função otimizada para carregar os dados CSV
 @st.cache_data
 def load_data(csv_file):
     try:
-        # Usando chunksize para ler o CSV em pedaços menores
-        data = pd.read_csv(csv_file, sep=";", encoding="latin-1", chunksize=10000)
-        # Concatenando os pedaços em um único DataFrame
-        return pd.concat(data)
+        data = pd.read_csv(csv_file, sep=";", encoding="latin-1", low_memory=False)
+        return data
     except Exception as e:
         st.error(f"Erro ao carregar o arquivo CSV: {e}")
         return None
@@ -55,13 +53,11 @@ if uploaded_file is not None:
     if not os.path.exists(extract_to):
         os.makedirs(extract_to)
     
-    # Barra de progresso para extração
-    progress_bar = st.progress(0)  # Inicializa a barra de progresso
+    st.info("Extraindo o arquivo ZIP...")  # Feedback ao usuário
     
-    # Descompacta o arquivo ZIP
-    unzip_file(uploaded_file, extract_to, progress_bar)
+    # Descompacta o arquivo ZIP com barra de progresso
+    unzip_file(uploaded_file, extract_to)
     
-    # Exibe uma mensagem de sucesso
     st.success("Arquivo ZIP carregado e extraído com sucesso!")
 
     # Caminho do arquivo CSV extraído
@@ -69,14 +65,15 @@ if uploaded_file is not None:
     
     if os.path.exists(csv_file):
         # Carregar e exibir os dados do CSV
+        st.info("Carregando os dados do arquivo CSV...")  # Feedback ao usuário
         data = load_data(csv_file)
         
         if data is not None:
-            st.write(data)
+            st.write(data.head())  # Exibe os primeiros registros
             
             # Filtros de dados
             st.sidebar.header("Filtros")
-            anos = st.sidebar.multiselect("Ano", sorted(data['Ano'].unique()))  # Ajuste conforme necessário
+            anos = st.sidebar.multiselect("Ano", sorted(data['Ano'].unique()))
             meses = st.sidebar.multiselect("Mês", sorted(data['Mês'].unique()))
             produtos = st.sidebar.multiselect("Produto", data['Descrição do Produto'].unique())
             ufs_origem = st.sidebar.multiselect("UF de Origem", data['UF de Origem'].unique())
@@ -120,7 +117,7 @@ if uploaded_file is not None:
                     color="Ano",
                     title="Volume por UF do Destinatário",
                     labels={"Volume(L)": "Volume (L)"},
-                    text="Volume(L)"  
+                    text="Volume(L)"
                 )
                 st.plotly_chart(fig_bar)
 
@@ -132,28 +129,12 @@ if uploaded_file is not None:
                     title="Proporção por Região do Destinatário"
                 )
                 st.plotly_chart(fig_pie)
-
-                # Gráfico de Evolução do Volume ao Longo do Tempo
-                fig_line = px.line(
-                    filtered_data.groupby(['Ano', 'Mês'])['Volume(L)'].sum().reset_index(),
-                    x="Mês",
-                    y="Volume(L)",
-                    color="Ano",
-                    title="Evolução do Volume ao Longo do Tempo",
-                    labels={"Volume(L)": "Volume (L)", "Mês": "Mês"}
-                )
-                st.plotly_chart(fig_line)
             else:
                 st.warning("Nenhum dado encontrado para gráficos.")
 
             # Dados Filtrados
             st.subheader("Dados Filtrados")
             st.dataframe(filtered_data)
-
-            # Exportar Dados Filtrados
-            if st.button("Exportar Dados Filtrados"):
-                filtered_data.to_csv("dados_filtrados.csv", index=False)
-                st.success("Dados exportados com sucesso!")
         else:
             st.warning("Não foi possível carregar os dados do arquivo CSV.")
     else:
