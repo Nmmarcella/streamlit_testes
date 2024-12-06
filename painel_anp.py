@@ -33,7 +33,14 @@ if uploaded_file is not None:
         st.write(data)
     except Exception as e:
         st.error(f"Erro ao carregar o arquivo CSV: {e}")
-
+    if 'Ano' not in data.columns:
+                st.error("Coluna 'Ano' não encontrada no arquivo CSV.")
+            else:
+                st.success("Arquivo CSV carregado com sucesso.")
+        except Exception as e:
+            st.error(f"Erro ao carregar o arquivo CSV: {e}")
+    
+    if 'data' in locals() and 'Ano' in data.columns:
 
 #titulo
 st.title("Painel Dinâmico - Vendas de Produtos Lubrificantes (ANP)")
