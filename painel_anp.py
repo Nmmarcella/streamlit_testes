@@ -4,11 +4,25 @@ import plotly.express as px
 
 #func para carregar dados
 @st.cache_data
-def load_data():
-    #caminho
-    file_path = r"https://github.com/Nmmarcella/streamlit_testes/blob/main/Lubrificante_Anexo_A.zip"
-    data = pd.read_csv(file_path, sep=";", encoding="latin-1")
-    return data
+def download_and_unzip(url, extract_to):
+    response = requests.get(url)
+    with zipfile.ZipFile(BytesIO(response.content)) as zip_ref:
+        zip_ref.extractall(extract_to)
+
+#url zip
+url = "https://github.com/Nmmarcella/streamlit_testes/raw/main/Lubrificante_Anexo_A.zip"  # URL para o arquivo ZIP
+
+#extracao
+extract_to = "path_to_extract_folder/"
+
+#descompact
+download_and_unzip(url, extract_to)
+
+#way
+csv_file = os.path.join(extract_to, "Lubrificante_Anexo_A.csv")
+
+#load
+data = pd.read_csv(csv_file, sep=";", encoding="latin-1")
 
 #carregando dados
 data = load_data()
