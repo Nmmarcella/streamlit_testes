@@ -9,6 +9,17 @@ def unzip_file(zip_file, extract_to):
     with zipfile.ZipFile(zip_file, 'r') as zip_ref:
         zip_ref.extractall(extract_to)
 
+# função para criar um arquivo ZIP a partir dos arquivos extraídos
+def create_zip_from_folder(folder_path):
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        for folder_name, subfolders, filenames in os.walk(folder_path):
+            for filename in filenames:
+                file_path = os.path.join(folder_name, filename)
+                zip_file.write(file_path, os.path.relpath(file_path, folder_path))
+    zip_buffer.seek(0)
+    return zip_buffer
+
 # título da aplicação
 st.title('Upload de Arquivo ZIP')
 
@@ -44,8 +55,8 @@ if uploaded_file is not None:
 
     # botão para o download do arquivo ZIP original
     st.download_button(
-        label="Baixar arquivo ZIP",
-        data=uploaded_file,
+        label="Baixar arquivo ZIP original",
+        data=create_zip_from_folder(extract_to),  # cria o ZIP a partir da pasta extraída
         file_name="arquivo_lubrificante.zip",
         mime="application/zip"
     )
