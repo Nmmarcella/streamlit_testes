@@ -28,23 +28,22 @@ if uploaded_file is not None:
     csv_file = os.path.join(extract_to, "Lubrificante_Anexo_A.csv")  
     
 
+    csv_file = os.path.join(extract_to, "Lubrificante_Anexo_A.csv")  
+
     try:
         data = pd.read_csv(csv_file, sep=";", encoding="latin-1")
         st.write(data)
+        
+        # Verifique se a coluna 'Ano' existe
+        if 'Ano' not in data.columns:
+            st.error("Coluna 'Ano' não encontrada no arquivo CSV.")
+        else:
+            st.success("Arquivo CSV carregado com sucesso.")
     except Exception as e:
         st.error(f"Erro ao carregar o arquivo CSV: {e}")
-    if 'Ano' not in data.columns:
-                st.error("Coluna 'Ano' não encontrada no arquivo CSV.")
-    else:
-                st.success("Arquivo CSV carregado com sucesso.")
-        except Exception as e:
-            st.error(f"Erro ao carregar o arquivo CSV: {e}")
-    
-    if 'data' in locals() and 'Ano' in data.columns:
 
-#titulo
-st.title("Painel Dinâmico - Vendas de Produtos Lubrificantes (ANP)")
-
+if 'data' in locals() and 'Ano' in data.columns:
+    st.title("Painel Dinâmico - Vendas de Produtos Lubrificantes (ANP)")
 
 
 #filters
