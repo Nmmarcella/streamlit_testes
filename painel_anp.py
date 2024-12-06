@@ -4,12 +4,7 @@ import streamlit as st
 import os
 from io import BytesIO
 
-# função para descompactar o arquivo ZIP
-def unzip_file(zip_file, extract_to):
-    with zipfile.ZipFile(zip_file, 'r') as zip_ref:
-        zip_ref.extractall(extract_to)
-
-# função para criar um arquivo ZIP a partir dos arquivos extraídos
+# Função para criar um arquivo ZIP a partir de arquivos existentes
 def create_zip_from_folder(folder_path):
     zip_buffer = BytesIO()
     with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
@@ -20,130 +15,56 @@ def create_zip_from_folder(folder_path):
     zip_buffer.seek(0)
     return zip_buffer
 
-# título da aplicação
-st.title('Upload de Arquivo ZIP')
+# Função para exibir a opção de download do arquivo ZIP Anexo_A
+def download_zip():
+    # Caminho para o arquivo Anexo_A.zip (o arquivo que você deseja que o usuário baixe)
+    zip_file_path = 'Anexo_A.zip'
+    
+    # Verificar se o arquivo ZIP existe
+    if os.path.exists(zip_file_path):
+        with open(zip_file_path, 'rb') as f:
+            st.download_button(
+                label="Baixar arquivo ZIP Anexo_A",
+                data=f,
+                file_name="Anexo_A.zip",
+                mime="application/zip"
+            )
+    else:
+        st.error("Arquivo Anexo_A.zip não encontrado para download.")
 
-# upload do arquivo ZIP
-uploaded_file = st.file_uploader("Escolha o arquivo ZIP", type=["zip"])
+# Função para descompactar o arquivo ZIP enviado
+def unzip_file(zip_file, extract_to):
+    with zipfile.ZipFile(zip_file, 'r') as zip_ref:
+        zip_ref.extractall(extract_to)
 
-# se o arquivo for enviado
+# Título da aplicação
+st.title('Download de Arquivo ZIP e Upload de Novo ZIP')
+
+# Primeira parte: Download do arquivo ZIP Anexo_A
+st.header("Baixar o arquivo ZIP Anexo_A")
+download_zip()
+
+# Segunda parte: Upload de um novo arquivo ZIP (Anexo_A.zip)
+uploaded_file = st.file_uploader("Agora, faça o upload do arquivo ZIP Anexo_A", type=["zip"])
+
+# Se o usuário fez o upload de um arquivo ZIP
 if uploaded_file is not None:
     extract_to = "extracted_files/"
-
-    # cria a pasta de extração se não existir
+    
+    # Cria a pasta de extração se não existir
     if not os.path.exists(extract_to):
         os.makedirs(extract_to)
-
-    # descompacta o arquivo ZIP
+    
+    # Descompacta o arquivo ZIP
     unzip_file(uploaded_file, extract_to)
+    
+    # Exibe uma mensagem de sucesso
+    st.success("Arquivo ZIP carregado e extraído com sucesso!")
 
-    # nome do arquivo CSV extraído
-    csv_file = os.path.join(extract_to, "Lubrificante_Anexo_A.csv")  
-
-    try:
-        # carrega o arquivo CSV
+    # Exemplo de carregamento de um arquivo CSV extraído (se presente)
+    csv_file = os.path.join(extract_to, "Lubrificante_Anexo_A.csv")
+    if os.path.exists(csv_file):
         data = pd.read_csv(csv_file, sep=";", encoding="latin-1")
         st.write(data)
-        
-        # verificar se a coluna 'Ano' existe
-        if 'Ano' not in data.columns:
-            st.error("Coluna 'Ano' não encontrada no arquivo CSV.")
-        else:
-            st.success("Arquivo CSV carregado com sucesso.")
-    except Exception as e:
-        st.error(f"Erro ao carregar o arquivo CSV: {e}")
-
-    # botão para o download do arquivo ZIP original
-    st.download_button(
-        label="Baixar arquivo ZIP original",
-        data=create_zip_from_folder(extract_to),  # cria o ZIP a partir da pasta extraída
-        file_name="arquivo_lubrificante.zip",
-        mime="application/zip"
-    )
-
-# título do painel dinâmico
-if 'data' in locals() and 'Ano' in data.columns:
-    st.title("Painel Dinâmico - Vendas de Produtos Lubrificantes (ANP)")
-
-    # filtros no painel lateral
-    st.sidebar.header("Filtros")
-    anos = st.sidebar.multiselect("Ano", sorted(data['Ano'].unique()))  # ajusta conforme necessário
-    meses = st.sidebar.multiselect("Mês", sorted(data['Mês'].unique()))
-    produtos = st.sidebar.multiselect("Produto", data['Descrição do Produto'].unique())
-    ufs_origem = st.sidebar.multiselect("UF de Origem", data['UF de Origem'].unique())
-    ufs_destino = st.sidebar.multiselect("UF do Destinatário", data['UF do Destinatário'].unique())
-
-    # aplica os filtros
-    filtered_data = data
-
-    if anos:
-        filtered_data = filtered_data[filtered_data['Ano'].isin(anos)]
-    if meses:
-        filtered_data = filtered_data[filtered_data['Mês'].isin(meses)]
-    if produtos:
-        filtered_data = filtered_data[filtered_data['Descrição do Produto'].isin(produtos)]
-    if ufs_origem:
-        filtered_data = filtered_data[filtered_data['UF de Origem'].isin(ufs_origem)]
-    if ufs_destino:
-        filtered_data = filtered_data[filtered_data['UF do Destinatário'].isin(ufs_destino)]
-
-    # indicadores
-    st.subheader("Indicadores")
-    if not filtered_data.empty:
-        total_volume = filtered_data['Volume(L)'].sum()
-        st.metric("Volume Total", f"{total_volume:,.2f} litros")
-        
-        produto_mais_vendido = (
-            filtered_data.groupby("Descrição do Produto")['Volume(L)'].sum().idxmax()
-        )
-        st.metric("Produto Mais Vendido", produto_mais_vendido)
     else:
-        st.warning("Nenhum dado encontrado para os filtros selecionados.")
-
-    # gráficos de análise
-    st.subheader("Gráficos de Análise")
-    if not filtered_data.empty:
-        # gráfico de barras por UF do Destinatário
-        fig_bar = px.bar(
-            filtered_data,
-            x="UF do Destinatário",
-            y="Volume(L)",
-            color="Ano",
-            title="Volume por UF do Destinatário",
-            labels={"Volume(L)": "Volume (L)"},
-            text="Volume(L)"  
-        )
-        st.plotly_chart(fig_bar)
-
-        # gráfico de pizza por Região do Destinatário
-        fig_pie = px.pie(
-            filtered_data,
-            names="Região do Destinatário",
-            values="Volume(L)",
-            title="Proporção por Região do Destinatário"
-        )
-        st.plotly_chart(fig_pie)
-
-        # gráfico de linha da evolução do volume ao longo do tempo
-        fig_line = px.line(
-            filtered_data.groupby(['Ano', 'Mês'])['Volume(L)'].sum().reset_index(),
-            x="Mês",
-            y="Volume(L)",
-            color="Ano",
-            title="Evolução do Volume ao Longo do Tempo",
-            labels={"Volume(L)": "Volume (L)", "Mês": "Mês"}
-        )
-        st.plotly_chart(fig_line)
-    else:
-        st.warning("Nenhum dado encontrado para gráficos.")
-
-    # dados filtrados
-    st.subheader("Dados Filtrados")
-    st.dataframe(filtered_data)
-
-    # exportação dos dados filtrados
-    if st.button("Exportar Dados Filtrados"):
-        filtered_data.to_csv("dados_filtrados.csv", index=False)
-        st.success("Dados exportados com sucesso!")
-else:
-    st.error("O arquivo CSV não foi carregado corretamente ou não contém a coluna 'Ano'.")
+        st.warning("Nenhum arquivo CSV encontrado no ZIP extraído.")
