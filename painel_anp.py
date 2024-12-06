@@ -1,28 +1,36 @@
-
 import zipfile
 import pandas as pd
 import streamlit as st
 import os
 from io import BytesIO
+import plotly.express as px
+import time
 
 # Função para exibir a opção de download do arquivo ZIP Anexo_A do GitHub
 def download_zip_from_github():
-    # Link para o arquivo ZIP hospedado no GitHub
-    github_url = "https://github.com/Nmmarcella/streamlit_testes/blob/main/Lubrificante_Anexo_A.zip"
-    
+    github_url = "https://github.com/Nmmarcella/streamlit_testes/blob/main/Lubrificante_Anexo_A.zip?raw=true"
     st.markdown(f"[Baixar arquivo ZIP Anexo_A](<{github_url}>)")
 
 # Função para descompactar o arquivo ZIP enviado
-def unzip_file(zip_file, extract_to):
+def unzip_file(zip_file, extract_to, progress_bar):
     with zipfile.ZipFile(zip_file, 'r') as zip_ref:
-        zip_ref.extractall(extract_to)
+        # Obter a lista de arquivos para extração
+        file_list = zip_ref.namelist()
+        
+        # Atualiza a barra de progresso com base na quantidade de arquivos
+        for i, file in enumerate(file_list):
+            zip_ref.extract(file, extract_to)
+            progress_bar.progress((i + 1) / len(file_list))  # Atualiza a barra com a proporção de arquivos extraídos
+            time.sleep(0.1)  # Simula algum tempo de extração
 
-# Função para carregar os dados CSV após extração do ZIP
+# Função otimizada para carregar os dados CSV
+@st.cache_data
 def load_data(csv_file):
     try:
-        # Carregar o CSV extraído do ZIP
-        data = pd.read_csv(csv_file, sep=";", encoding="latin-1")
-        return data
+        # Usando chunksize para ler o CSV em pedaços menores
+        data = pd.read_csv(csv_file, sep=";", encoding="latin-1", chunksize=10000)
+        # Concatenando os pedaços em um único DataFrame
+        return pd.concat(data)
     except Exception as e:
         st.error(f"Erro ao carregar o arquivo CSV: {e}")
         return None
@@ -47,8 +55,11 @@ if uploaded_file is not None:
     if not os.path.exists(extract_to):
         os.makedirs(extract_to)
     
+    # Barra de progresso para extração
+    progress_bar = st.progress(0)  # Inicializa a barra de progresso
+    
     # Descompacta o arquivo ZIP
-    unzip_file(uploaded_file, extract_to)
+    unzip_file(uploaded_file, extract_to, progress_bar)
     
     # Exibe uma mensagem de sucesso
     st.success("Arquivo ZIP carregado e extraído com sucesso!")
@@ -101,8 +112,6 @@ if uploaded_file is not None:
             # Gráficos de Análise
             st.subheader("Gráficos de Análise")
             if not filtered_data.empty:
-                import plotly.express as px
-
                 # Gráfico de Volume por UF do Destinatário
                 fig_bar = px.bar(
                     filtered_data,
@@ -149,4 +158,3 @@ if uploaded_file is not None:
             st.warning("Não foi possível carregar os dados do arquivo CSV.")
     else:
         st.warning("Nenhum arquivo CSV encontrado no ZIP extraído.")
-
