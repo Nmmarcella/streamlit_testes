@@ -1,25 +1,16 @@
+
 import zipfile
 import pandas as pd
 import streamlit as st
 import os
 from io import BytesIO
 
-# Função para exibir a opção de download do arquivo ZIP Anexo_A
-def download_zip():
-    # Caminho para o arquivo Anexo_A.zip (o arquivo que você deseja que o usuário baixe)
-    zip_file_path = 'Anexo_A.zip'  # Aqui você deve garantir que esse arquivo esteja no mesmo diretório do script
-
-    # Verificar se o arquivo ZIP existe
-    if os.path.exists(zip_file_path):
-        with open(zip_file_path, 'rb') as f:
-            st.download_button(
-                label="Baixar arquivo ZIP Anexo_A",
-                data=f,
-                file_name="Anexo_A.zip",
-                mime="application/zip"
-            )
-    else:
-        st.error("Arquivo Anexo_A.zip não encontrado para download.")
+# Função para exibir a opção de download do arquivo ZIP Anexo_A do GitHub
+def download_zip_from_github():
+    # Link para o arquivo ZIP hospedado no GitHub
+    github_url = "https://github.com/Nmmarcella/streamlit_testes/blob/main/Lubrificante_Anexo_A.zip"
+    
+    st.markdown(f"[Baixar arquivo ZIP Anexo_A](<{github_url}>)")
 
 # Função para descompactar o arquivo ZIP enviado
 def unzip_file(zip_file, extract_to):
@@ -39,9 +30,9 @@ def load_data(csv_file):
 # Título da aplicação
 st.title('Download de Arquivo ZIP e Upload de Novo ZIP')
 
-# Primeira parte: Download do arquivo ZIP Anexo_A
+# Primeira parte: Download do arquivo ZIP Anexo_A do GitHub
 st.header("Baixar o arquivo ZIP Anexo_A")
-download_zip()
+download_zip_from_github()
 
 # Segunda parte: Upload de um novo arquivo ZIP (Anexo_A.zip)
 st.header("Agora, faça o upload do arquivo ZIP Anexo_A")
@@ -158,3 +149,4 @@ if uploaded_file is not None:
             st.warning("Não foi possível carregar os dados do arquivo CSV.")
     else:
         st.warning("Nenhum arquivo CSV encontrado no ZIP extraído.")
+
