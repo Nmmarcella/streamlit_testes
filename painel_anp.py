@@ -11,17 +11,27 @@ def download_zip_from_github():
     st.markdown(f"[Baixar arquivo ZIP Anexo_A](<{github_url}>)")
 
 # Função para descompactar o arquivo ZIP enviado
-def unzip_file(zip_file, extract_to):
+def unzip_file(zip_file, extract_to, progress_bar=None):
     with zipfile.ZipFile(zip_file, 'r') as zip_ref:
-        zip_ref.extractall(extract_to)
+        file_list = zip_ref.namelist()
+        for i, file in enumerate(file_list):
+            zip_ref.extract(file, extract_to)
+            if progress_bar:
+                progress_bar.progress((i + 1) / len(file_list))
 
-# Função otimizada para carregar dados CSV em blocos
+# Função para carregar dados em blocos
 @st.cache_data
-def load_data(csv_file):
+def load_data_in_chunks(csv_file, chunksize=100000):
     try:
-        # Lê apenas as colunas necessárias para os filtros e análise
-        cols_to_use = ["Ano", "Mês", "Descrição do Produto", "UF de Origem", "UF do Destinatário", "Região do Destinatário", "Volume(L)"]
-        data = pd.read_csv(csv_file, sep=";", encoding="latin-1", usecols=cols_to_use, low_memory=False)
+        cols_to_use = [
+            "Ano", "Mês", "Descrição do Produto", "UF de Origem",
+            "UF do Destinatário", "Região do Destinatário", "Volume(L)"
+        ]
+        chunks = pd.read_csv(
+            csv_file, sep=";", encoding="latin-1", usecols=cols_to_use,
+            chunksize=chunksize, low_memory=False
+        )
+        data = pd.concat(chunks, ignore_index=True)
         
         # Converte colunas categóricas para economizar memória
         for col in ["Ano", "Mês", "Descrição do Produto", "UF de Origem", "UF do Destinatário", "Região do Destinatário"]:
@@ -51,17 +61,17 @@ if uploaded_file is not None:
     if not os.path.exists(extract_to):
         os.makedirs(extract_to)
     
-    st.info("Extraindo o arquivo ZIP...")  # Feedback ao usuário
-    unzip_file(uploaded_file, extract_to)
+    st.info("Extraindo o arquivo ZIP...")
+    progress_bar = st.progress(0)  # Barra de progresso
+    unzip_file(uploaded_file, extract_to, progress_bar)
     st.success("Arquivo ZIP carregado e extraído com sucesso!")
 
     # Caminho do arquivo CSV extraído
     csv_file = os.path.join(extract_to, "Lubrificante_Anexo_A.csv")
     
     if os.path.exists(csv_file):
-        # Carregar e exibir os dados do CSV
         st.info("Carregando os dados do arquivo CSV...")  # Feedback ao usuário
-        data = load_data(csv_file)
+        data = load_data_in_chunks(csv_file)
         
         if data is not None:
             st.write(data.head())  # Exibe os primeiros registros
